@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>株式会社Bug.s -Best Unique Gather-</title>
+<meta name="description" content="身近な人の不便を無くしたい。自分の周りの人が幸せになって欲しい。その幸せを波状的に広げていきたい...きっかけはそこから。Bug.s物語のはじまりです。">
+<meta name="keywords" content="株式会社Bug.s,システムエンジニアリングサービス,HP制作,SNS運用,システム・ソフトウェア開発,写真撮影">
+<meta property="og:title" content="株式会社Bug.s">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://bugs.co.jp/">
+<meta property="og:image" content="img/ogp.png">
+<link rel="stylesheet" type="text/css" href="css/style.min.css">
+<link rel="icon" href="img/favicon.ico" sizes="any">
+<style>
+/* ===== DQ BATTLE SCREEN ===== */
+#loading {
+  background: #000 !important;
+  align-items: stretch !important;
+  justify-content: flex-start !important;
+  overflow: hidden !important;
+  font-family: 'DotGothic16-Regular', monospace !important;
+}
+.dq-battle {
+  flex: 1;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  color: #fff;
+}
+.dq-field {
+  flex: 1;
+  position: relative;
+  background: linear-gradient(to bottom,
+    #000030 0%, #000080 45%,
+    #0000a0 55%, #404040 55%,
+    #282828 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+.dq-enemy {
+  width: 180px;
+  height: auto;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  animation: dqFloat 1.8s ease-in-out infinite;
+  position: relative;
+  z-index: 1;
+  margin-bottom: 60px;
+}
+@keyframes dqFloat {
+  0%,100% { transform: translateY(0); }
+  50%      { transform: translateY(-14px); }
+}
+.dq-enemy.dq-hit {
+  animation: dqHit 0.6s steps(1) forwards !important;
+}
+@keyframes dqHit {
+  0%,40%,80% { opacity: 1; filter: brightness(4) saturate(0); }
+  20%,60%,100% { opacity: 0; }
+}
+/* UI panel */
+.dq-ui {
+  display: flex;
+  gap: 6px;
+  padding: 6px 8px 0;
+  background: #000;
+}
+/* Window border */
+.dq-win {
+  border: 3px solid #fff;
+  background: #000;
+  padding: 10px 14px;
+  position: relative;
+}
+/* Status */
+.dq-status {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.dq-charname {
+  font-size: clamp(14px,2vw,18px);
+  color: #ffff00;
+  letter-spacing: 1px;
+}
+.dq-lv {
+  font-size: clamp(11px,1.5vw,13px);
+  color: #cccccc;
+}
+.dq-stat-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: clamp(11px,1.5vw,13px);
+}
+.dq-stat-row .sl { width: 20px; color: #aaa; flex-shrink: 0; }
+.dq-bar {
+  flex: 1;
+  height: 10px;
+  background: #2a2a2a;
+  border: 1px solid #555;
+  overflow: hidden;
+  min-width: 40px;
+}
+.dq-bar-hp { height:100%; width:100%; background: linear-gradient(to right,#00cc00,#88ff00); transition: width .5s; }
+.dq-bar-mp { height:100%; width:80%; background: linear-gradient(to right,#0066ff,#00ccff); }
+.dq-stat-row .sv { font-size: clamp(10px,1.4vw,12px); min-width: 50px; text-align: right; }
+.dq-gold { font-size: clamp(10px,1.4vw,12px); color: #ffdd00; margin-top: 2px; }
+/* Commands */
+.dq-cmd {
+  width: clamp(130px,22vw,210px);
+  display: none;
+}
+.dq-cmd-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px 4px;
+}
+.dq-cmd-item {
+  font-size: clamp(12px,1.8vw,16px);
+  color: #fff;
+  white-space: nowrap;
+}
+.dq-cmd-item.sel { color: #ffff00; }
+/* Message box */
+.dq-msgbox {
+  margin: 6px 8px 8px;
+  min-height: 68px;
+  font-size: clamp(13px,1.8vw,16px);
+  line-height: 1.9;
+  position: relative;
+}
+.dq-cursor {
+  position: absolute;
+  bottom: 4px;
+  right: 6px;
+  font-size: 12px;
+  color: #aaa;
+  animation: dqBlink .8s step-end infinite;
+}
+@keyframes dqBlink { 0%,100%{opacity:1} 50%{opacity:0} }
+/* Skip button */
+#dqSkip {
+  position: absolute;
+  bottom: 14px;
+  right: 16px;
+  background: transparent;
+  border: 2px solid #888;
+  color: #888;
+  font-family: 'DotGothic16-Regular', monospace;
+  font-size: 12px;
+  padding: 4px 10px;
+  cursor: pointer;
+  z-index: 10;
+  letter-spacing: 1px;
+  transition: color .2s, border-color .2s;
+}
+#dqSkip:hover { color: #fff; border-color: #fff; }
+</style>
+</head>
+<body>
+  <div id="loading">
+    <div class="dq-battle">
+      <div class="dq-field">
+        <img src="img/slime.png" alt="バグ" class="dq-enemy" id="dqEnemy">
+      </div>
+      <div class="dq-ui">
+        <div class="dq-status dq-win">
+          <div class="dq-charname">バグズ</div>
+          <div class="dq-lv">Lv&nbsp;&nbsp;20</div>
+          <div class="dq-stat-row">
+            <span class="sl">HP</span>
+            <div class="dq-bar"><div class="dq-bar-hp" id="dqHpBar"></div></div>
+            <span class="sv" id="dqHpNum">75/75</span>
+          </div>
+          <div class="dq-stat-row">
+            <span class="sl">MP</span>
+            <div class="dq-bar"><div class="dq-bar-mp"></div></div>
+            <span class="sv">128/152</span>
+          </div>
+          <div class="dq-gold">G 26630 &nbsp; E 29991</div>
+        </div>
+        <div class="dq-cmd dq-win" id="dqCmd">
+          <div class="dq-cmd-grid">
+            <div class="dq-cmd-item sel">▶ たたかう</div>
+            <div class="dq-cmd-item">&nbsp;&nbsp;じゅもん</div>
+            <div class="dq-cmd-item">&nbsp;&nbsp;にげる</div>
+            <div class="dq-cmd-item">&nbsp;&nbsp;どうぐ</div>
+          </div>
+        </div>
+      </div>
+      <div class="dq-msgbox dq-win">
+        <div id="dqText"></div>
+        <span class="dq-cursor" id="dqCursor"></span>
+      </div>
+    </div>
+    <button id="dqSkip">SKIP ▶▶</button>
+  </div>
+  <button id="menu_btn" class="sp"><span>MENU</span></button>
+  <nav id="nav">
+    <ul class="menu flx justify-between align-end">
+      <li><a href="#about"><p class="ico"><img src="img/about.png" alt="アバウト"></p><p>アバウト</p></a></li>
+      <li><a href="#service"><p class="ico"><img src="img/service.png" alt="サービス"></p><p>サービス</p></a></li>
+      <li><a href="#member"><p class="ico"><img src="img/member.png" alt="メンバー"></p><p>メンバー</p></a></li>
+      <li><a href="#recruit"><p class="ico"><img src="img/recruit.png" alt="リクルート"></p><p>リクルート</p></a></li>
+      <li><a href="#contact"><p class="ico"><img src="img/contact.png" alt="コンタクト"></p><p>コンタクト</p></a></li>
+    </ul>
+  </nav>
+<main id="main-content">
+<section id="top">
+  <h1><img class="fadein" src="img/logo_white.png" alt="Bug.s -Best Unique Gather-">
+  <p id="bugtxt" class="typing" data-speed="50">-Best Unique Gather-</p></h1>
+  <div class="castle">
+    <img src="img/castle.png" alt="castle">
+  </div>
+</section>
+<section id="about">
+  <div class="inner">
+    <ul class="flx justify-center party">
+      <li><img src="img/archer.png" alt="archer"></li>
+      <li><img src="img/warrior.png" alt="warrior"></li>
+      <li><img src="img/hero.png" alt="hero"></li>
+      <li><img src="img/wizard.png" alt="wizard"></li>
+      <li><img src="img/healer.png" alt="healer"></li>
+    </ul>
+    <div class="txt_box">
+      <h2 class="typing" data-speed="30">ちーむ バグズ<br>株式会社 Bug.s</h2><br>
+      <p class="typing" data-speed="20">
+        身近な人の不便を無くしたい。<br>自分の周りの人が幸せになって欲しい。<br>その幸せを波状的に広げていきたい...<br><br>
+        きっかけはそこから。Bug.s物語のはじまりです。</p>
+      <br>
+      <a class="arrow" href="#service"><img src="img/arrow_btm.png" alt="arrow"></a>
+    </div>
+  </div>
+</section>
+<div class="mon">
+  <div class="flx justify-center align-center gate">
+    <p><img src="img/gatekeeper.png" alt=""></p>
+    <p><img src="img/tunnel.png" alt=""></p>
+    <p><img src="img/gatekeeper.png" alt=""></p>
+  </div>
+</div>
+<section id="service">
+  <div class="inner">
+    <div class="txt_box flx justify-center align-center">
+      <p class="icon"><img src="img/service2.png" alt="service"></p>
+      <h3>サービス</h3>
+    </div>
+    <ul class="service_list grid">
+      <li class="grid-item">
+        <div class="flx align-end justify-center icons">
+          <p class="fukidasi"><img src="img/ser1.png" alt="SES システムエンジニアリングサービス"></p>
+          <p><img src="img/red.png" alt="SES システムエンジニアリングサービス"></p>
+        </div>
+        <dl class="txt_box">
+          <dt class="typing" data-speed="20">SES<br>システムエンジニアリングサービス</dt><br>
+          <dd class="typing" data-speed="10">
+            SESとは、システムエンジニアリングサービスの略です。<br>
+            ソフトウェアやシステムの開発・保守・運用における委託契約の一種で特定の業務に対して技術者の労働を提供する契約のことです。<br>
+            オフィスにエンジニアを派遣（常駐）することにより、お客様に寄り添った対応、様々なサポートが可能になります。<br>
+            Bug.sでは、経験豊富な幅広いエンジニアを保持しており質の高いシステムソリューションを提供しております。<br><br>
+            また、開発パートナー企業様も積極的に募集しておりますのでご興味のある企業様は、お気軽にお問い合わせ下さいませ。
+          </dd>
+          <a class="flx justify-center" href="#contact"><img class="arrow_right" src="img/arrow_right.png" alt="arrow"><p>詳しく聞く</p></a>
+        </dl>
+      </li>
+      <li class="grid-item">
+        <div class="flx align-end justify-center icons">
+          <p class="fukidasi"><img src="img/ser2.png" alt="Homepage Creation HP制作"></p>
+          <p><img src="img/blue.png" alt="Homepage Creation HP制作"></p>
+        </div>
+        <dl class="txt_box">
+          <dt class="typing" data-speed="20">Homepage Creation<br>HP制作</dt><br>
+          <dd class="typing" data-speed="10">
+            コーポレートサイト、LP、ECサイトなど、多様なサイトを制作可能です。<br>
+            HP制作、リニューアルはもちろんのこと、企画からデザイン、運用に至るまでお客様のご希望に沿ったサイト構築をご提案いたします。
+          </dd>
+          <a class="flx justify-center" href="#contact"><img class="arrow_right" src="img/arrow_right.png" alt="arrow"><p>詳しく聞く</p></a>
+        </dl>
+      </li>
+      <li class="grid-item">
+        <div class="flx align-end justify-center icons">
+          <p class="fukidasi"><img src="img/ser3.png" alt="System Development システム開発"></p>
+          <p><img src="img/green.png" alt="System Development システム開発"></p>
+        </div>
+        <dl class="txt_box">
+          <dt class="typing" data-speed="20">System Development<br>システム・ソフトウェア開発</dt><br>
+          <dd class="typing" data-speed="10">
+            業務システムの各種ソフトウェア開発について、要件定義、
+            設計、プログラミング、テスト、運用の各工程に合わせたご要望を踏まえてハイスキルエンジニアが対応します。<br>
+            WebサービスやAPIの利用、RESTfulAPI化、IaaS・PaaS・BaaSを利用したモダンなシステム開発、SaaS・ASPサービスの 提供等、多くの実績がございます。
+          </dd>
+          <a class="flx justify-center" href="#contact"><img class="arrow_right" src="img/arrow_right.png" alt="arrow"><p>詳しく聞く</p></a>
+        </dl>
+      </li>
+      <li class="grid-item">
+        <div class="flx align-end justify-center icons">
+          <p class="fukidasi"><img src="img/ser4.png" alt="SNS Operation SNS運用"></p>
+          <p><img src="img/yellow.png" alt="SNS Operation SNS運用"></p>
+        </div>
+        <dl class="txt_box">
+          <dt class="typing" data-speed="20">SNS Operation<br>SNS運用</dt><br>
+          <dd class="typing" data-speed="10">
+            それぞれの企業様にとっての最適な運営戦略の提案やコメントへの返信、
+            アクセス解析など、SNS運用に関わるさまざまな業務をサポート致します。<br><br>
+            SNS運用代行を利用すれば、運用にかかわる業務を一括で管理するため、
+            SNS関連の業務以外にも時間を費やすことが可能です。<br>
+            また、定期的な投稿、それぞれの媒体に合った運営戦略を行うため安定したユーザー数を獲得しやすくなります。<br>
+            近年増えてきている、SNSでの炎上や、ネガティブなコメント（度を超えた批判的なコメントなど）にも素早く対応することができ、トラブルを事前に回避致します。
+          </dd>
+          <a class="flx justify-center" href="#contact"><img class="arrow_right" src="img/arrow_right.png" alt="arrow"><p>詳しく聞く</p></a>
+        </dl>
+      </li>
+      <li class="grid-item">
+        <div class="flx align-end justify-center icons">
+          <p class="fukidasi"><img src="img/ser5.png" alt="Photograph 写真撮影"></p>
+          <p><img src="img/black.png" alt="Photograph 写真撮影"></p>
+        </div>
+        <dl class="txt_box">
+          <dt class="typing" data-speed="20">Photograph<br>写真撮影</dt><br>
+          <dd class="typing" data-speed="10">
+            物撮り、人撮りのどちらも対応可能です。<br>
+            経験豊富なカメラマンが、お客様のご要望に寄り添った写真を撮影致します。<br><br>
+            作品などご覧になりたい場合は、お気軽にお問い合わせ下さい。
+          </dd>
+          <a class="flx justify-center" href="#contact"><img class="arrow_right" src="img/arrow_right.png" alt="arrow"><p>詳しく聞く</p></a>
+        </dl>
+      </li>
+    </ul>
+  </div>
+</section>
+<section id="member">
+  <div class="kabe">
+    <div class="inner">
+      <div class="txt_box flx justify-center align-center">
+        <p class="icon"><img src="img/member.png" alt="service"></p>
+        <h3>メンバー</h3>
+      </div>
+    </div>
+  </div>
+  <div class="floor">
+    <div class="counter_side flx justify-between align-end">
+      <p class="tana"><img src="img/tana.png" alt=""></p>
+      <div class="flx right">
+        <p class="isu"><img src="img/isu.png" alt=""></p>
+        <p class="hako"><img src="img/hako.png" alt=""></p>
+      </div>
+    </div>
+    <div class="counter">
+      <p><img src="img/counter.png" alt=""></p>
+    </div>
+    <div class="carpet">
+        <div class="fukidashi_list">
+          <div class="fukidashi f1"><span>
+            <p>N.shibazaki</p>
+            ▶︎職業 社長<br><br>
+            ▶︎言語<br>
+            Java/Ruby/Javascript/HTML/CSS/Salesforce/<br><br>
+            ▶︎フレームワーク<br>
+            SpringFramework/Struts/RubyonRails/<br><br>
+            ▶︎ひとこと<br>
+            挑戦することが人生の醍醐味だ！<br>
+            連続家族の様に助け合い友人の様に認め合いライバルの様に高め合う</span></div>
+          <div class="fukidashi f2"><span>
+            <p>T.sekine</p>
+            ▶︎職業 営業<br><br>
+            ▶︎ひとこと<br>
+            何しても先延ばしにしてたら何も始まらない。<br>
+            いつやるの？<br>
+            いまでしょ！！！</span></div>
+          <div class="fukidashi f3"><span>
+            <p>H.sakurai</p>
+            ▶︎職業 CTO（最高技術責任者）<br><br>
+            ▶︎言語<br>
+            Java/Javascript/Ruby/PHP/VBA<br><br>
+            ▶︎フレームワーク<br>
+            RubyonRails/Vue</span></div>
+          <div class="fukidashi f4"><span>
+            <p>E.shimizu</p>
+            ▶︎職業 SE（システムエンジニア）<br><br>
+            ▶︎言語<br>
+            Java/Javascript/HTML/VBA/VB.net/C#/Oracle<br><br>
+            ▶︎フレームワーク<br>
+            Struts<br><br>
+            ▶︎ひとこと<br>
+            めざせ顧客満足度No.1！<br>
+            お客様のご要望を重視して、可能な限り実現します！<br>
+            システム化で業務効率アップ↑↑</span></div>
+        </div>
+      <ul class="flx justify-center members">
+        <li class="member me1"><img src="img/member_1.png" alt=""></li>
+        <li class="member me2"><img src="img/member_2.png" alt=""></li>
+        <li class="member me3"><img src="img/member_3.png" alt=""></li>
+        <li class="member me4"><img src="img/member_4.png" alt=""></li>
+      </ul>
+      <p class="table"><img src="img/table.png" alt=""></p>
+    </div>
+  </div>
+
+</section>
+<section id="recruit">
+  <div class="kabe">
+    <div class="inner">
+      <div class="txt_box flx justify-center align-center">
+        <p class="icon"><img src="img/recruit.png" alt="recruit"></p>
+        <h3>リクルート</h3>
+      </div>
+      <table>
+        <tr><td>対象者</td><td>：</td><td>学歴、性別、国籍、年齢不問。やる気があり、成長したい方！システム開発経験1年以上お持ちの方、優遇致します。</td></tr>
+        <tr><td>雇用形態</td><td>：</td><td>正社員（使用期間あり）、アルバイト</td></tr>
+        <tr><td>職種</td><td>：</td><td>プログラマ、システムエンジニア、WEBデザイナー</td></tr>
+        <tr><td>仕事内容</td><td>：</td><td>お客様先での常駐支援、自社サービスの開発</td></tr>
+        <tr><td>給与</td><td>：</td><td>能力、経験、スキルにより判断いたします。前職の給与なども考慮致しますので、ご相談ください。</td></tr>
+        <tr><td>待遇/福利厚生</td><td>：</td><td>交通費全額支給 各種社会保険完備 奨学金全額負担制度 資格取得支援制度 スキルアップ援助制度 家賃補助&yen;10,000</td></tr>
+        <tr class="btn"><td colspan="3"><a href="#contact" class="flx justify-center"><img class="arrow_right" src="img/arrow_right.png" alt="arrow"><p>仲間になる</p></a></td></tr>
+      </table>
+
+      <aside class="flx justify-between">
+        <table>
+          <tr><td>職種</td><td>：</td><td></td></tr>
+          <tr><td>仕事内容</td><td>：</td><td></td></tr>
+          <tr class="detail"><td colspan="3">準備中</td></tr>
+          <tr class="btn"><td colspan="3"><a href="#contact" class="flx justify-center"><img class="arrow_right" src="img/arrow_right.png" alt="arrow"><p>詳しく聞く</p></a></td></tr>
+        </table>
+        <table>
+          <tr><td>職種</td><td>：</td><td></td></tr>
+          <tr><td>仕事内容</td><td>：</td><td></td></tr>
+          <tr class="detail"><td colspan="3">準備中</td></tr>
+          <tr class="btn"><td colspan="3"><a href="#contact" class="flx justify-center"><img class="arrow_right" src="img/arrow_right.png" alt="arrow"><p>詳しく聞く</p></a></td></tr>
+        </table>
+      </aside>
+    </div>
+  </div>
+  <div class="floor">
+    <div class="counter_side flx justify-between align-end">
+      <p class="kitchen"><img src="img/kitchen.png" alt=""></p>
+      <div class="tana2"><img src="img/tana2.png" alt=""></div>
+    </div>
+    <div class="counter">
+      <p class="master"><img src="img/master.png" alt=""></p>
+      <p class="table"><img src="img/counter2.png" alt=""></p>
+      <div class="flx justify-around">
+        <p class="isu"><img src="img/isu.png" alt=""></p><p class="isu"><img src="img/isu.png" alt=""></p>
+      </div>
+    </div>
+    <div class="carpet">
+    </div>
+  </div>
+</section>
+<div class="mon">
+  <div class="flx justify-center align-center gate">
+    <p><img src="img/gatekeeper.png" alt=""></p>
+    <p><img src="img/tunnel.png" alt=""></p>
+    <p><img src="img/gatekeeper.png" alt=""></p>
+  </div>
+</div>
+<section id="contact">
+  <div class="inner">
+    <div class="txt_box flx justify-center align-center">
+      <p class="icon"><img src="img/contact.png" alt="contact"></p>
+      <h3>コンタクト</h3>
+    </div>
+    <form action="" method="post" id="Form">
+      <div class="wrap">
+          <span class="err"></span>
+          <label class="flx align-center" for="name"><span class="bold">お名前</span>
+          <input type="text" name="name" autocomplete="name" value=""></label>
+
+          <span class="err"></span>
+          <label class="flx align-center" for="furigana"><span class="bold">フリガナ</span>
+          <input type="text" name="furigana" value=""></label>
+
+          <span class="err"></span>
+          <label class="flx align-center" for="email"><span class="bold">メールアドレス</span>
+          <input type="email" name="email" autocomplete="email" value=""></label>
+
+          <span class="err"></span>
+          <label class="flx align-center" for="tel"><span class="bold">お電話番号</span>
+          <input type="tel" name="tel" autocomplete="tel" value=""></label>
+
+          <span class="err"></span>
+          <label class="message" for="txt"><span class="bold">メッセージ</span>
+          <textarea name="txt"></textarea></label>
+
+          <div class="flx align-center justify-center btn">
+            <img class="arrow_right" src="img/arrow_right.png" alt="arrow">
+            <input type="hidden" value="1" name="form">
+            <input type="submit" value="内容を確認する">
+          </div>
+      </div>
+    </form>
+  </div>
+</section>
+<div class="flx justify-center align-center river">
+  <p><img src="img/bridge.jpg" alt=""></p>
+</div>
+<footer>
+  <p>&copy; 2021.Bug.s</p>
+</footer>
+<a id="totop" href="#"><img src="img/rocket.png" alt="トップへ戻る"></a>
+</main>
+
+<script type="text/javascript" src="js/masonry.min.js"></script>
+<script type="text/javascript" src="js/index.js"></script>
+<script>
+// ===== ページ読み込みごとにメンバーの座席をシャッフル =====
+(function () {
+  var MEMBERS = [
+    {
+      img: 'img/member_1.png',
+      info: '<p>N.shibazaki</p>▶︎職業 社長<br><br>▶︎言語<br>Java/Ruby/Javascript/HTML/CSS/Salesforce/<br><br>▶︎フレームワーク<br>SpringFramework/Struts/RubyonRails/<br><br>▶︎ひとこと<br>挑戦することが人生の醍醐味だ！<br>連続家族の様に助け合い友人の様に認め合いライバルの様に高め合う'
+    },
+    {
+      img: 'img/member_2.png',
+      info: '<p>T.sekine</p>▶︎職業 営業<br><br>▶︎ひとこと<br>何しても先延ばしにしてたら何も始まらない。<br>いつやるの？<br>いまでしょ！！！'
+    },
+    {
+      img: 'img/member_3.png',
+      info: '<p>H.sakurai</p>▶︎職業 CTO（最高技術責任者）<br><br>▶︎言語<br>Java/Javascript/Ruby/PHP/VBA<br><br>▶︎フレームワーク<br>RubyonRails/Vue'
+    },
+    {
+      img: 'img/member_4.png',
+      info: '<p>E.shimizu</p>▶︎職業 SE（システムエンジニア）<br><br>▶︎言語<br>Java/Javascript/HTML/VBA/VB.net/C#/Oracle<br><br>▶︎フレームワーク<br>Struts<br><br>▶︎ひとこと<br>めざせ顧客満足度No.1！<br>お客様のご要望を重視して、可能な限り実現します！<br>システム化で業務効率アップ↑↑'
+    }
+  ];
+
+  function shuffle(arr) {
+    var a = arr.slice();
+    for (var i = a.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var tmp = a[i]; a[i] = a[j]; a[j] = tmp;
+    }
+    return a;
+  }
+
+  function shuffleMembers() {
+    var shuffled = shuffle(MEMBERS);
+    for (var i = 0; i < 4; i++) {
+      // 画像を入れ替え
+      var li = document.querySelector('.me' + (i + 1));
+      if (li) {
+        var img = li.querySelector('img');
+        if (img) img.src = shuffled[i].img;
+      }
+      // ふきだし内容を入れ替え
+      var f = document.querySelector('.f' + (i + 1) + ' span');
+      if (f) f.innerHTML = shuffled[i].info;
+    }
+  }
+
+  // DOMContentLoaded で即実行（静的HTMLが描画されてから上書き）
+  document.addEventListener('DOMContentLoaded', shuffleMembers);
+})();
+</script>
+</body>
+</html>
